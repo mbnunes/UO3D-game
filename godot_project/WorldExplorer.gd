@@ -196,8 +196,8 @@ func _update_raycast_inspection() -> void:
 		]
 	else:
 		var collider = res.collider
-		var col_name := collider.name if collider else ""
-		var parent_name := collider.get_parent().name if collider and collider.get_parent() else ""
+		var col_name: String = str(collider.name) if collider else ""
+		var parent_name: String = str(collider.get_parent().name) if (collider and collider.get_parent()) else ""
 		text += "[b][color=#81C784]🌱 TERRENO / SOLO NATURAL[/color][/b]\n"
 		text += "[b]📍 Coord UO:[/b] [color=#FFF59D]X: %d, Y: %d, Z: %d[/color]\n" % [uo_x, uo_y, uo_z]
 		text += "[b]🌐 Coord 3D:[/b] Vector3(%.1f, %.2f, %.1f) [b]Dist:[/b] %.1fm\n" % [hit_pos.x, hit_pos.y, hit_pos.z, dist]
