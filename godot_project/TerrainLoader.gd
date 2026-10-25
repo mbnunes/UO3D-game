@@ -81,8 +81,20 @@ var _queued_keys: Dictionary = {}    # Vector2i(cx, cy) -> bool
 var _chunk_size_meters: float = 64.0
 var _time_since_last_check: float = 0.0
 var _atlas_texture: Texture2D = null
+var _shared_atlas_material: StandardMaterial3D = null
 var _buildings_atlas_texture: Texture2D = null
 const CHECK_INTERVAL: float = 0.15
+
+
+func _get_shared_atlas_material() -> StandardMaterial3D:
+	if _shared_atlas_material and _shared_atlas_material.albedo_texture:
+		return _shared_atlas_material
+	_shared_atlas_material = StandardMaterial3D.new()
+	_shared_atlas_material.albedo_texture = _get_atlas_texture()
+	_shared_atlas_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	_shared_atlas_material.roughness = 0.85
+	_shared_atlas_material.specular = 0.2
+	return _shared_atlas_material
 
 
 func _get_buildings_atlas_texture() -> Texture2D:
@@ -167,6 +179,7 @@ func switch_map(map_id: int) -> void:
 	_queued_keys.clear()
 
 	_atlas_texture = null
+	_shared_atlas_material = null
 
 	var map_dirs := {
 		0: "res://terrain_chunks_atlas/",
@@ -185,6 +198,8 @@ func switch_map(map_id: int) -> void:
 
 
 func reload_all_chunks() -> void:
+	_atlas_texture = null
+	_shared_atlas_material = null
 	for key in _loaded_chunks.keys():
 		var chunk_node: Node3D = _loaded_chunks[key]
 		if is_instance_valid(chunk_node):
@@ -357,13 +372,8 @@ func _instantiate_chunk(p: PendingChunk) -> void:
 		mesh_inst.cast_shadow = shadow_casting
 		if not use_baked_textures and custom_material:
 			mesh_inst.material_override = custom_material
-		elif use_baked_textures and mesh_inst.mesh:
-			var mat = mesh_inst.get_active_material(0)
-			if mat is StandardMaterial3D and not mat.albedo_texture:
-				var atlas_tex := _get_atlas_texture()
-				if atlas_tex:
-					mat.albedo_texture = atlas_tex
-					mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+		elif use_baked_textures:
+			mesh_inst.material_override = _get_shared_atlas_material()
 
 		if generate_collision and mesh_inst.mesh:
 			_attach_collision(chunk_root, mesh_inst)
