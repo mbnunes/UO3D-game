@@ -169,17 +169,26 @@ void vertex() {
     v_world_pos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
     v_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
     v_vertex_color = COLOR;
+
+    uint tid = unpack_tile_id(COLOR);
+    if (is_water_tile(tid)) {
+        VERTEX.y = -1.80;
+        v_world_pos.y = (MODEL_MATRIX * vec4(VERTEX, 1.0)).y;
+    }
 }
 
 void fragment() {
     uint tid = unpack_tile_id(v_vertex_color);
 
-    // If water tile and user didn't hide ocean, keep subtle bedrock tint
+    // If water tile: render as uniform brown riverbed soil with pebbles at level depth
     if (is_water_tile(tid)) {
-        ALBEDO = vec3(0.04, 0.16, 0.28);
-        ROUGHNESS = 0.15;
-        SPECULAR = 0.5;
+        float n = fbm2d(v_world_pos.xz * 1.2);
+        vec3 riverbed_col = mix(vec3(0.36, 0.26, 0.16), vec3(0.48, 0.38, 0.24), n);
+        ALBEDO = riverbed_col;
+        ROUGHNESS = 0.88;
+        SPECULAR = 0.15;
         METALLIC = 0.0;
+        NORMAL = vec3(0.0, 1.0, 0.0);
     } else {
         // 1. Calculate slope (0.0 = completely flat ground, 1.0 = completely vertical wall)
         float slope = 1.0 - clamp(dot(v_normal, vec3(0.0, 1.0, 0.0)), 0.0, 1.0);
