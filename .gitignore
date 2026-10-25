@@ -1,0 +1,17 @@
+# Godot 4.x
+.godot/
+*.import
+
+# Large binary terrain chunk caches (generated locally via tools/ or downloaded from Releases)
+godot_project/terrain_chunks_atlas*/
+godot_project/terrain_chunks/
+*.zip
+*.tar.gz
+
+# Python & IDE
+__pycache__/
+*.pyc
+.idea/
+.vscode/
+*.swp
+*.log

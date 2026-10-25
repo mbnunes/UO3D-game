@@ -1,0 +1,137 @@
+[gd_scene load_steps=2 format=3 uid="uid://uo_world_selector"]
+
+[ext_resource type="Script" path="res://WorldSelector.gd" id="1_selector"]
+
+[node name="WorldSelector" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_selector")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.12, 0.16, 1)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="Center"]
+custom_minimum_size = Vector2(750, 520)
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="Center/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 25
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 25
+
+[node name="VBox" type="VBoxContainer" parent="Center/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Header" type="Label" parent="Center/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "Ultima Online 3D - Seletor de Cidades"
+horizontal_alignment = 1
+
+[node name="SubHeader" type="Label" parent="Center/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.75, 0.8, 1)
+theme_override_font_sizes/font_size = 14
+text = "Escolha um local para carregar o terreno 3D otimizado (ou pressione as teclas 1 a 8):"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="Center/Panel/Margin/VBox"]
+layout_mode = 2
+
+[node name="Scroll" type="ScrollContainer" parent="Center/Panel/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Grid" type="GridContainer" parent="Center/Panel/Margin/VBox/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/h_separation = 15
+theme_override_constants/v_separation = 12
+columns = 2
+
+[node name="Btn_britain" type="Button" parent="Center/Panel/Margin/VBox/Scroll/Grid"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(300, 70)
+theme_override_font_sizes/font_size = 15
+text = "1. Britain e Arredores
+(Capital de Britannia, Castelo de Lord British e rio)"
+
+[node name="Btn_trinsic" type="Button" parent="Center/Panel/Margin/VBox/Scroll/Grid"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(300, 70)
+theme_override_font_sizes/font_size = 15
+text = "2. Trinsic (Cidade dos Paladinos)
+(Cidade murada ao sul, muralhas e docas)"
+
+[node name="Btn_yew" type="Button" parent="Center/Panel/Margin/VBox/Scroll/Grid"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(300, 70)
+theme_override_font_sizes/font_size = 15
+text = "3. Yew e Floresta
+(Cidade da floresta profunda, corte de justiça e abadia)"
+
+[node name="Btn_minoc" type="Button" parent="Center/Panel/Margin/VBox/Scroll/Grid"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(300, 70)
+theme_override_font_sizes/font_size = 15
+text = "4. Minoc e Covetous
+(Cidade dos mineradores, pontes sobre o rio e entrada da montanha)"
+
+[node name="Btn_moonglow" type="Button" parent="Center/Panel/Margin/VBox/Scroll/Grid"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(300, 70)
+theme_override_font_sizes/font_size = 15
+text = "5. Moonglow (Ilha dos Magos)
+(Ilha mágica a leste com telescópio e líceum)"
+
+[node name="Btn_bucs_den" type="Button" parent="Center/Panel/Margin/VBox/Scroll/Grid"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(300, 70)
+theme_override_font_sizes/font_size = 15
+text = "6. Buccaneer's Den
+(Ilha dos piratas e foras da lei)"
+
+[node name="Btn_magincia" type="Button" parent="Center/Panel/Margin/VBox/Scroll/Grid"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(300, 70)
+theme_override_font_sizes/font_size = 15
+text = "7. Magincia (Ilha)
+(Ilha da humildade e praias)"
+
+[node name="Btn_jhelom" type="Button" parent="Center/Panel/Margin/VBox/Scroll/Grid"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(300, 70)
+theme_override_font_sizes/font_size = 15
+text = "8. Jhelom (Ilhas dos Guerreiros)
+(Arquipélago do sul com arena de duelo e fazendas)"
+

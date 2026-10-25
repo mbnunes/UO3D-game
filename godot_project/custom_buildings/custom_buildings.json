@@ -1,0 +1,29 @@
+[
+  {
+    "building_id": "building_01_lord_british_castle_annex",
+    "name": "Lord British Castle Annex",
+    "map_index": 0,
+    "model_path": "res://custom_buildings/building_01_lord_british_castle_annex.glb",
+    "chunk": [
+      22,
+      24
+    ],
+    "position": [
+      47.5,
+      3.6,
+      21.5
+    ],
+    "world_position": [
+      1455.5,
+      3.5999999999999996,
+      1557.5
+    ],
+    "bounds": [
+      1434,
+      1476,
+      1546,
+      1568
+    ],
+    "updated_at": 1792880340.53535
+  }
+]
