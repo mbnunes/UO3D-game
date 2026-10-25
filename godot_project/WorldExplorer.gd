@@ -10,12 +10,12 @@ extends Node3D
 @export var terrain_loader: TerrainLoader
 
 var maps_info = {
-	KEY_F1: {"id": 0, "name": "Felucca (Map 0)",  "pos": Vector3(1440, 35, 1690), "loc": "Britain (West Bank)"},
-	KEY_F2: {"id": 1, "name": "Trammel (Map 1)",  "pos": Vector3(1440, 35, 1690), "loc": "Britain (West Bank)"},
-	KEY_F3: {"id": 2, "name": "Ilshenar (Map 2)", "pos": Vector3(850, 30, 800),   "loc": "Pass of Karnaugh"},
-	KEY_F4: {"id": 3, "name": "Malas (Map 3)",    "pos": Vector3(1000, 30, 520),  "loc": "Luna (Capital)"},
-	KEY_F5: {"id": 4, "name": "Tokuno (Map 4)",   "pos": Vector3(740, 35, 1260),  "loc": "Zento (Capital)"},
-	KEY_F6: {"id": 5, "name": "Ter Mur (Map 5)",  "pos": Vector3(850, 35, 3450),  "loc": "Royal City"},
+	KEY_F1: {"id": 0, "name": "Felucca (Map 0)",  "pos": Vector3(1440, 35, 1690), "loc": "Britain (West Bank)", "has_ocean": true,  "water_y": -0.55},
+	KEY_F2: {"id": 1, "name": "Trammel (Map 1)",  "pos": Vector3(1440, 35, 1690), "loc": "Britain (West Bank)", "has_ocean": true,  "water_y": -0.55},
+	KEY_F3: {"id": 2, "name": "Ilshenar (Map 2)", "pos": Vector3(850, 30, 800),   "loc": "Pass of Karnaugh",    "has_ocean": false, "water_y": -20.0},
+	KEY_F4: {"id": 3, "name": "Malas (Map 3)",    "pos": Vector3(1000, 30, 520),  "loc": "Luna (Capital)",       "has_ocean": false, "water_y": -30.0},
+	KEY_F5: {"id": 4, "name": "Tokuno (Map 4)",   "pos": Vector3(740, 35, 1260),  "loc": "Zento (Capital)",      "has_ocean": true,  "water_y": -0.55},
+	KEY_F6: {"id": 5, "name": "Ter Mur (Map 5)",  "pos": Vector3(850, 35, 3450),  "loc": "Royal City",           "has_ocean": false, "water_y": -20.0},
 }
 
 var current_map_id: int = 0
@@ -133,7 +133,7 @@ var _water_enabled: bool = true
 func _process(_delta: float) -> void:
 	if player_camera:
 		var ocean: Node3D = get_node_or_null("OceanWater")
-		if ocean:
+		if ocean and ocean.visible:
 			# Snap to 2-meter increments to keep vertex grid stable while following camera
 			ocean.global_position.x = floor(player_camera.global_position.x / 2.0) * 2.0
 			ocean.global_position.z = floor(player_camera.global_position.z / 2.0) * 2.0
@@ -195,8 +195,13 @@ func toggle_water() -> void:
 	if not ocean:
 		return
 	_water_enabled = not _water_enabled
-	ocean.visible = _water_enabled
-	print("[WorldExplorer] Oceano 3D alternado: ", _water_enabled)
+	var has_ocean: bool = true
+	for k in maps_info:
+		if maps_info[k]["id"] == current_map_id:
+			has_ocean = maps_info[k].get("has_ocean", true)
+			break
+	ocean.visible = _water_enabled and has_ocean
+	print("[WorldExplorer] Oceano 3D alternado: ", ocean.visible)
 
 func toggle_grass() -> void:
 	var gm: Node3D = get_node_or_null("GrassManager")
@@ -211,6 +216,21 @@ func change_map(map_id: int, map_name: String, spawn_pos: Vector3, spawn_name: S
 	current_map_id = map_id
 	if terrain_loader:
 		terrain_loader.switch_map(map_id)
+
+	# Configure ocean water according to continental geography
+	var ocean: Node3D = get_node_or_null("OceanWater")
+	if ocean:
+		var has_ocean: bool = true
+		var water_y: float = -0.55
+		for k in maps_info:
+			if maps_info[k]["id"] == map_id:
+				has_ocean = maps_info[k].get("has_ocean", true)
+				water_y = maps_info[k].get("water_y", -0.55)
+				break
+		ocean.visible = has_ocean and _water_enabled
+		ocean.global_position.y = water_y
+		print("[WorldExplorer] Mapa %s: Oceano 3D visivel=%s, nivel Y=%.2f" % [map_name, str(ocean.visible), water_y])
+
 	teleport_to(spawn_pos, map_name + " - " + spawn_name)
 	var map_lbl: Label = get_node_or_null("HUD/Panel/VBox/CurrentMap")
 	if map_lbl:
