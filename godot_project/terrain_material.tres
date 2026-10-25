@@ -1,0 +1,26 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://terrain_mat_pbr"]
+
+[ext_resource type="Shader" path="res://terrain_shader.gdshader" id="1_terrain"]
+
+[resource]
+shader = ExtResource("1_terrain")
+shader_parameter/normal_strength = 1.35
+shader_parameter/rock_normal_strength = 1.8
+shader_parameter/base_roughness = 0.78
+shader_parameter/base_specular = 0.28
+shader_parameter/ao_strength = 0.65
+shader_parameter/grass_color = Color(0.24, 0.48, 0.16, 1)
+shader_parameter/grass_dry_color = Color(0.42, 0.52, 0.22, 1)
+shader_parameter/dirt_color = Color(0.48, 0.38, 0.24, 1)
+shader_parameter/sand_color = Color(0.82, 0.74, 0.5, 1)
+shader_parameter/rock_color = Color(0.48, 0.48, 0.5, 1)
+shader_parameter/rock_dark_color = Color(0.28, 0.28, 0.3, 1)
+shader_parameter/snow_color = Color(0.92, 0.95, 0.98, 1)
+shader_parameter/lava_color = Color(0.95, 0.28, 0.05, 1)
+shader_parameter/cliff_slope_start = 0.4
+shader_parameter/cliff_slope_end = 0.68
+shader_parameter/triplanar_scale = 0.35
+shader_parameter/show_wireframe_grid = false
+shader_parameter/grid_line_thickness = 0.05
+shader_parameter/show_elevation_contours = false
+shader_parameter/contour_interval = 2.0

@@ -49,6 +49,8 @@ extends Node3D
 @export_group("Buildings Streaming")
 ## If true, loads 3D architectural buildings dynamically per chunk
 @export var load_chunk_buildings_enabled: bool = true
+## Material override for procedural world architecture (PBR stone walls and roofs)
+@export var building_material_override: Material
 ## If true, loads standalone Lord British Castle test model (keep false when streaming chunk buildings)
 @export var load_castle_british_test: bool = false
 ## Path to Lord British Castle model
@@ -113,6 +115,10 @@ func _get_atlas_texture() -> Texture2D:
 func _ready() -> void:
 	if not chunks_directory.ends_with("/"):
 		chunks_directory += "/"
+	if not custom_material and ResourceLoader.exists("res://terrain_material.tres"):
+		custom_material = load("res://terrain_material.tres")
+	if not building_material_override and ResourceLoader.exists("res://building_material.tres"):
+		building_material_override = load("res://building_material.tres")
 	_read_manifest()
 	_load_castle_british()
 	_update_streaming(true)
@@ -175,6 +181,17 @@ func switch_map(map_id: int) -> void:
 		chunks_directory = map_dirs[map_id]
 
 	_read_manifest()
+	_update_streaming(true)
+
+
+func reload_all_chunks() -> void:
+	for key in _loaded_chunks.keys():
+		var chunk_node: Node3D = _loaded_chunks[key]
+		if is_instance_valid(chunk_node):
+			chunk_node.queue_free()
+	_loaded_chunks.clear()
+	_load_queue.clear()
+	_queued_keys.clear()
 	_update_streaming(true)
 
 
@@ -405,6 +422,8 @@ func _load_chunk_buildings(parent_chunk: Node3D, cx: int, cy: int) -> void:
 		var bld_mesh := _find_mesh_instance(bld_node)
 		if bld_mesh and bld_mesh.mesh:
 			bld_mesh.cast_shadow = shadow_casting
+			if building_material_override:
+				bld_mesh.material_override = building_material_override
 			if generate_collision:
 				_attach_collision(bld_node, bld_mesh)
 		parent_chunk.add_child(bld_node)

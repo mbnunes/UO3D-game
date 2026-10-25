@@ -1,0 +1,22 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://building_mat_pbr"]
+
+[ext_resource type="Shader" path="res://building_shader.gdshader" id="1_building"]
+
+[resource]
+shader = ExtResource("1_building")
+shader_parameter/stone_color = Color(0.72, 0.7, 0.66, 1)
+shader_parameter/stone_dark_color = Color(0.52, 0.5, 0.46, 1)
+shader_parameter/mortar_color = Color(0.38, 0.36, 0.34, 1)
+shader_parameter/brick_width = 0.65
+shader_parameter/brick_height = 0.32
+shader_parameter/mortar_size = 0.04
+shader_parameter/wall_normal_strength = 1.6
+shader_parameter/roof_color = Color(0.22, 0.32, 0.45, 1)
+shader_parameter/roof_ridge_color = Color(0.15, 0.22, 0.32, 1)
+shader_parameter/shingle_width = 0.35
+shader_parameter/shingle_height = 0.4
+shader_parameter/roof_roughness = 0.48
+shader_parameter/roof_specular = 0.45
+shader_parameter/wood_color = Color(0.45, 0.32, 0.2, 1)
+shader_parameter/wood_dark_color = Color(0.3, 0.2, 0.12, 1)
+shader_parameter/plank_width = 0.28

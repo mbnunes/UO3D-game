@@ -1,0 +1,19 @@
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://water_mat_hd"]
+
+[ext_resource type="Shader" path="res://water_shader.gdshader" id="1_water"]
+
+[resource]
+render_priority = 1
+shader = ExtResource("1_water")
+shader_parameter/shallow_color = Color(0.08, 0.45, 0.58, 0.85)
+shader_parameter/deep_color = Color(0.02, 0.08, 0.25, 0.95)
+shader_parameter/foam_color = Color(0.92, 0.96, 1, 1)
+shader_parameter/depth_distance = 4.5
+shader_parameter/foam_depth = 0.35
+shader_parameter/wave_speed = 0.85
+shader_parameter/wave_scale = 1.2
+shader_parameter/wave_height = 0.12
+shader_parameter/roughness = 0.04
+shader_parameter/specular = 0.92
+shader_parameter/refraction_strength = 0.025
+shader_parameter/fresnel_power = 4.0

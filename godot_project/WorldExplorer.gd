@@ -74,6 +74,14 @@ func _ready() -> void:
 		insp.text = "Mirando: [Mire em qualquer construção ou terreno]"
 		vbox.add_child(insp)
 
+		# Graphics FX Status Label
+		var fx_lbl = Label.new()
+		fx_lbl.name = "FXStatus"
+		fx_lbl.add_theme_color_override("font_color", Color(0.9, 0.85, 0.4, 1.0))
+		fx_lbl.add_theme_font_size_override("font_size", 13)
+		fx_lbl.text = "Visual: [F8: Efeitos HD] | [F7: Terreno PBR] | [F9: Oceano 3D] | [F10: Grama 3D]"
+		vbox.add_child(fx_lbl)
+
 	# Setup crosshair in the center of the screen
 	var hud = get_node_or_null("HUD")
 	if hud:
@@ -89,8 +97,31 @@ func _ready() -> void:
 		ch.add_theme_font_size_override("font_size", 20)
 		hud.add_child(ch)
 
+var _hd_fx_enabled: bool = true
+var _water_enabled: bool = true
+
+func _process(_delta: float) -> void:
+	if player_camera:
+		var ocean: Node3D = get_node_or_null("OceanWater")
+		if ocean:
+			# Snap to 2-meter increments to keep vertex grid stable while following camera
+			ocean.global_position.x = floor(player_camera.global_position.x / 2.0) * 2.0
+			ocean.global_position.z = floor(player_camera.global_position.z / 2.0) * 2.0
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_F8:
+			toggle_hd_effects()
+			return
+		if event.keycode == KEY_F7:
+			toggle_terrain_shader()
+			return
+		if event.keycode == KEY_F9:
+			toggle_water()
+			return
+		if event.keycode == KEY_F10:
+			toggle_grass()
+			return
 		if maps_info.has(event.keycode):
 			var m = maps_info[event.keycode]
 			change_map(m["id"], m["name"], m["pos"], m["loc"])
@@ -98,6 +129,53 @@ func _unhandled_input(event: InputEvent) -> void:
 		if waypoints.has(event.keycode):
 			var wp = waypoints[event.keycode]
 			teleport_to(wp["pos"], wp["name"])
+
+func toggle_hd_effects() -> void:
+	var we: WorldEnvironment = get_node_or_null("WorldEnvironment")
+	if not we or not we.environment:
+		return
+	_hd_fx_enabled = not _hd_fx_enabled
+	we.environment.ssao_enabled = _hd_fx_enabled
+	we.environment.ssil_enabled = _hd_fx_enabled
+	we.environment.sdfgi_enabled = _hd_fx_enabled
+	we.environment.volumetric_fog_enabled = _hd_fx_enabled
+	var lbl: Label = get_node_or_null("HUD/Panel/VBox/FXStatus")
+	if lbl:
+		if _hd_fx_enabled:
+			lbl.text = "Graficos HD: SSAO, SSIL, SDFGI, Fog ATIVOS [F8: Desativar]"
+			lbl.add_theme_color_override("font_color", Color(0.3, 1.0, 0.6, 1.0))
+		else:
+			lbl.text = "Graficos HD: DESATIVADOS (Modo Leve / 1997) [F8: Ativar]"
+			lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4, 1.0))
+	print("[WorldExplorer] Graficos HD alternados: ", _hd_fx_enabled)
+
+func toggle_terrain_shader() -> void:
+	if not terrain_loader:
+		return
+	terrain_loader.use_baked_textures = not terrain_loader.use_baked_textures
+	if not terrain_loader.use_baked_textures and not terrain_loader.custom_material:
+		var sm := ShaderMaterial.new()
+		sm.shader = load("res://terrain_shader.gdshader")
+		terrain_loader.custom_material = sm
+	terrain_loader.reload_all_chunks()
+	print("[WorldExplorer] Material de terreno alternado: use_baked_textures = ", terrain_loader.use_baked_textures)
+
+func toggle_water() -> void:
+	var ocean: Node3D = get_node_or_null("OceanWater")
+	if not ocean:
+		return
+	_water_enabled = not _water_enabled
+	ocean.visible = _water_enabled
+	print("[WorldExplorer] Oceano 3D alternado: ", _water_enabled)
+
+func toggle_grass() -> void:
+	var gm: Node3D = get_node_or_null("GrassManager")
+	if not gm:
+		return
+	gm.visible = not gm.visible
+	if "enabled" in gm:
+		gm.enabled = gm.visible
+	print("[WorldExplorer] Grama procedural alternada: ", gm.visible)
 
 func change_map(map_id: int, map_name: String, spawn_pos: Vector3, spawn_name: String) -> void:
 	current_map_id = map_id
