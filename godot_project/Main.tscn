@@ -1,10 +1,10 @@
-[gd_scene load_steps=9 format=3 uid="uid://cub5u2w5bw8qa"]
+[gd_scene load_steps=8 format=3 uid="uid://cub5u2w5bw8qa"]
 
 [ext_resource type="Script" path="res://WorldExplorer.gd" id="1_explorer"]
 [ext_resource type="Script" path="res://TerrainLoader.gd" id="2_terrain"]
 [ext_resource type="Script" path="res://FreeLookCamera.gd" id="3_camera"]
-[ext_resource type="Environment" uid="uid://britannia_env_hd" path="res://britannia_environment.tres" id="4_env"]
-[ext_resource type="Material" uid="uid://water_mat_hd" path="res://water_material.tres" id="5_water_mat"]
+[ext_resource type="Environment" uid="uid://cv8e3loo660u7" path="res://britannia_environment.tres" id="4_env"]
+[ext_resource type="Material" path="res://water_material.tres" id="5_water_mat"]
 [ext_resource type="Script" path="res://GrassManager.gd" id="6_grass"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_water"]
@@ -32,16 +32,12 @@ light_energy = 1.3
 light_indirect_energy = 1.25
 light_volumetric_fog_energy = 1.1
 shadow_enabled = true
-directional_shadow_mode = 2
+shadow_bias = 0.02
+shadow_blur = 1.2
 directional_shadow_split_1 = 0.08
-directional_shadow_split_2 = 0.2
-directional_shadow_split_3 = 0.5
 directional_shadow_blend_splits = true
 directional_shadow_fade_start = 0.85
 directional_shadow_max_distance = 450.0
-shadow_bias = 0.02
-shadow_normal_bias = 2.0
-shadow_blur = 1.2
 
 [node name="FreeLookCamera" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.906308, 0.422618, 0, -0.422618, 0.906308, 1440, 35, 1690)
@@ -50,9 +46,9 @@ move_speed = 60.0
 
 [node name="GrassManager" type="Node3D" parent="." node_paths=PackedStringArray("target_camera")]
 script = ExtResource("6_grass")
-target_camera = NodePath("../FreeLookCamera")
 instance_count = 5000
 radius = 50.0
+target_camera = NodePath("../FreeLookCamera")
 
 [node name="TerrainLoader" type="Node3D" parent="." node_paths=PackedStringArray("target_camera")]
 script = ExtResource("2_terrain")
@@ -66,27 +62,58 @@ target_camera = NodePath("../FreeLookCamera")
 [node name="Panel" type="PanelContainer" parent="HUD"]
 offset_left = 20.0
 offset_top = 20.0
-offset_right = 580.0
-offset_bottom = 240.0
+offset_right = 530.0
 
 [node name="VBox" type="VBoxContainer" parent="HUD/Panel"]
 layout_mode = 2
 
 [node name="Title" type="Label" parent="HUD/Panel/VBox"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Ultima Online 3D - Mundo Contínuo"
+theme_override_font_sizes/font_size = 17
+text = "Ultima Online 3D - Britannia"
 
 [node name="Location" type="Label" parent="HUD/Panel/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.9, 0.9, 0.5, 1)
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 13
 text = "Localização: Britain (1440, 35, 1690)"
 
 [node name="Help" type="Label" parent="HUD/Panel/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-theme_override_font_sizes/font_size = 12
-text = "WASD + Botão Dir.: Voar livremente | Shift: Acelerar | E/Q: Subir/Descer
-Mapas: F1: Felucca | F2: Trammel | F3: Ilshenar | F4: Malas | F5: Tokuno | F6: Ter Mur
+theme_override_colors/font_color = Color(0.75, 0.75, 0.75, 1)
+theme_override_font_sizes/font_size = 11
+text = "WASD + Botão Dir.: Voar | Shift: Acelerar | E/Q: Subir/Descer
 Atalhos de Britain: 1: West Bank | 0: Castelo | C: Trono | B: Ponte | P: Porto"
+
+[node name="PanelInspector" type="PanelContainer" parent="HUD"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -470.0
+offset_top = 20.0
+offset_right = -20.0
+
+[node name="VBox" type="VBoxContainer" parent="HUD/PanelInspector"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="HUD/PanelInspector/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.9, 1.0, 1)
+theme_override_font_sizes/font_size = 16
+text = "🎯 Inspetor de Alvo (Mira Central)"
+
+[node name="TargetDetails" type="RichTextLabel" parent="HUD/PanelInspector/VBox"]
+layout_mode = 2
+fit_content = true
+bbcode_enabled = true
+text = "Mirando: [Aponte a mira para um tile ou construção]"
+
+[node name="BtnCopy" type="Button" parent="HUD/PanelInspector/VBox"]
+layout_mode = 2
+text = "📋 Copiar Dados do Alvo (Tecla K)"
+
+[node name="CopyFeedback" type="Label" parent="HUD/PanelInspector/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 1.0, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = ""

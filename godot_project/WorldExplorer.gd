@@ -42,6 +42,8 @@ func _ready() -> void:
 	if not terrain_loader:
 		terrain_loader = get_node_or_null("TerrainLoader")
 
+	_load_buildings_spatial_index()
+
 	var vbox = get_node_or_null("HUD/Panel/VBox")
 	if vbox:
 		# Map Selector Status Label
@@ -65,14 +67,6 @@ func _ready() -> void:
 			)
 			btn_row.add_child(btn)
 		vbox.add_child(btn_row)
-
-		# Realtime inspect label
-		var insp = Label.new()
-		insp.name = "InspectInfo"
-		insp.add_theme_color_override("font_color", Color(0.4, 0.95, 1.0, 1.0))
-		insp.add_theme_font_size_override("font_size", 14)
-		insp.text = "Mirando: [Mire em qualquer construção ou terreno]"
-		vbox.add_child(insp)
 
 		# Graphics FX Status Label
 		var fx_lbl = Label.new()
@@ -112,6 +106,11 @@ func _ready() -> void:
 
 		vbox.add_child(fx_btn_row)
 
+	# Connect Inspector Copy Button
+	var btn_copy = get_node_or_null("HUD/PanelInspector/VBox/BtnCopy")
+	if btn_copy:
+		btn_copy.pressed.connect(copy_inspect_details)
+
 	# Setup crosshair in the center of the screen
 	var hud = get_node_or_null("HUD")
 	if hud:
@@ -129,6 +128,112 @@ func _ready() -> void:
 
 var _hd_fx_enabled: bool = true
 var _water_enabled: bool = true
+var _buildings_index: Dictionary = {}
+var _last_copied_text: String = ""
+
+func _load_buildings_spatial_index() -> void:
+	var path := "res://buildings_spatial_index.json"
+	if FileAccess.file_exists(path):
+		var f := FileAccess.open(path, FileAccess.READ)
+		if f:
+			var txt := f.get_as_text()
+			var json = JSON.new()
+			if json.parse(txt) == OK and json.data is Dictionary:
+				_buildings_index = json.data
+				print("[WorldExplorer] Indice espacial de construcoes carregado com sucesso.")
+
+func _physics_process(_delta: float) -> void:
+	_update_raycast_inspection()
+
+func _update_raycast_inspection() -> void:
+	if not player_camera:
+		return
+	var label: RichTextLabel = get_node_or_null("HUD/PanelInspector/VBox/TargetDetails")
+	if not label:
+		return
+
+	var space_state = player_camera.get_world_3d().direct_space_state
+	var cam_pos = player_camera.global_position
+	var forward = -player_camera.global_transform.basis.z
+	var ray_end = cam_pos + forward * 350.0
+
+	var query = PhysicsRayQueryParameters3D.create(cam_pos, ray_end)
+	query.collide_with_areas = true
+	query.collide_with_bodies = true
+	var res = space_state.intersect_ray(query)
+
+	if not res:
+		label.text = "[color=#888888]Mirando no horizonte / nada ao alcance (alcance: 350m)[/color]"
+		_last_copied_text = ""
+		return
+
+	var hit_pos: Vector3 = res.position
+	var dist: float = cam_pos.distance_to(hit_pos)
+	var uo_x := int(round(hit_pos.x))
+	var uo_y := int(round(hit_pos.z))
+	var uo_z := int(round(hit_pos.y / 0.12))
+	var cx := int(floor(hit_pos.x / 64.0))
+	var cy := int(floor(hit_pos.z / 64.0))
+	var sec_x := int(floor(cx / 8.0))
+	var sec_y := int(floor(cy / 8.0))
+
+	var bld = _find_building_at_coords(current_map_id, uo_x, uo_y)
+
+	var text := ""
+	var copy_summary := ""
+
+	if bld:
+		text += "[b][color=#FFD54F]🏛️ CONSTRUÇÃO:[/color][/b] [color=#00E5FF]%s[/color]\n" % bld.get("id", "")
+		text += "[b]🏷️ Nome:[/b] %s ([color=#81C784]%s[/color])\n" % [bld.get("name", ""), bld.get("region", "")]
+		text += "[b]📍 Coord UO:[/b] [color=#FFF59D]X: %d, Y: %d, Z: %d[/color]\n" % [uo_x, uo_y, uo_z]
+		text += "[b]🌐 Coord 3D:[/b] Vector3(%.1f, %.2f, %.1f) [b]Dist:[/b] %.1fm\n" % [hit_pos.x, hit_pos.y, hit_pos.z, dist]
+		text += "[b]🗺️ Chunk:[/b] (%d, %d) [Sector (%d, %d)]\n" % [cx, cy, sec_x, sec_y]
+		text += "[b]📁 Pasta:[/b] [color=#90CAF9]%s[/color]\n" % bld.get("folder", "")
+		text += "[b]⚡ Comando:[/b] [color=#A7FFEB]python3 update_world_building.py --building %s[/color]" % bld.get("id", "")
+
+		copy_summary = "[UO3D Construção]\nID: %s\nNome: %s\nRegião: %s\nMapa: %d\nCoord UO: X: %d, Y: %d, Z: %d\nCoord 3D: Vector3(%.1f, %.2f, %.1f)\nChunk: (%d, %d)\nPasta: %s\nComando: python3 update_world_building.py --building %s" % [
+			bld.get("id", ""), bld.get("name", ""), bld.get("region", ""), current_map_id, uo_x, uo_y, uo_z, hit_pos.x, hit_pos.y, hit_pos.z, cx, cy, bld.get("folder", ""), bld.get("id", "")
+		]
+	else:
+		var collider = res.collider
+		var col_name := collider.name if collider else ""
+		var parent_name := collider.get_parent().name if collider and collider.get_parent() else ""
+		text += "[b][color=#81C784]🌱 TERRENO / SOLO NATURAL[/color][/b]\n"
+		text += "[b]📍 Coord UO:[/b] [color=#FFF59D]X: %d, Y: %d, Z: %d[/color]\n" % [uo_x, uo_y, uo_z]
+		text += "[b]🌐 Coord 3D:[/b] Vector3(%.1f, %.2f, %.1f) [b]Dist:[/b] %.1fm\n" % [hit_pos.x, hit_pos.y, hit_pos.z, dist]
+		text += "[b]🗺️ Chunk:[/b] (%d, %d) [Sector (%d, %d)]\n" % [cx, cy, sec_x, sec_y]
+		text += "[b]🔍 Objeto:[/b] %s (%s)\n" % [parent_name, col_name]
+		text += "[color=#B0BEC5]Mire em uma parede ou telhado para inspecionar construções.[/color]"
+
+		copy_summary = "[UO3D Terreno]\nMapa: %d\nCoord UO: X: %d, Y: %d, Z: %d\nCoord 3D: Vector3(%.1f, %.2f, %.1f)\nChunk: (%d, %d)\nSetor: (%d, %d)" % [
+			current_map_id, uo_x, uo_y, uo_z, hit_pos.x, hit_pos.y, hit_pos.z, cx, cy, sec_x, sec_y
+		]
+
+	label.text = text
+	_last_copied_text = copy_summary
+
+func _find_building_at_coords(map_id: int, uo_x: int, uo_y: int) -> Dictionary:
+	var key = str(map_id)
+	if not _buildings_index.has(key):
+		return {}
+	var list: Array = _buildings_index[key]
+	for b in list:
+		if uo_x >= b["min_x"] and uo_x <= b["max_x"] and uo_y >= b["min_y"] and uo_y <= b["max_y"]:
+			return b
+	return {}
+
+func copy_inspect_details() -> void:
+	if _last_copied_text.is_empty():
+		return
+	DisplayServer.clipboard_set(_last_copied_text)
+	var fb: Label = get_node_or_null("HUD/PanelInspector/VBox/CopyFeedback")
+	if fb:
+		fb.text = "✓ Dados copiados! Pode colar no chat (Ctrl+V)."
+		var tween = create_tween()
+		tween.tween_property(fb, "modulate:a", 1.0, 0.1)
+		tween.tween_interval(3.0)
+		tween.tween_property(fb, "modulate:a", 0.0, 1.0)
+	print("[WorldExplorer] Dados do alvo copiados para o clipboard:\n", _last_copied_text)
 
 func _process(_delta: float) -> void:
 	if player_camera:
@@ -151,6 +256,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		if event.keycode == KEY_G:
 			toggle_grass()
+			return
+		if event.keycode == KEY_K:
+			copy_inspect_details()
 			return
 		if maps_info.has(event.keycode):
 			var m = maps_info[event.keycode]
