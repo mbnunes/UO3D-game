@@ -79,8 +79,38 @@ func _ready() -> void:
 		fx_lbl.name = "FXStatus"
 		fx_lbl.add_theme_color_override("font_color", Color(0.9, 0.85, 0.4, 1.0))
 		fx_lbl.add_theme_font_size_override("font_size", 13)
-		fx_lbl.text = "Visual: [F8: Efeitos HD] | [F7: Terreno PBR] | [F9: Oceano 3D] | [F10: Grama 3D]"
+		fx_lbl.text = "Visual: [H: Efeitos HD] | [T: Terreno PBR] | [O: Oceano 3D] | [G: Grama 3D]"
 		vbox.add_child(fx_lbl)
+
+		# Buttons row for visual toggles
+		var fx_btn_row = HBoxContainer.new()
+		fx_btn_row.name = "FXButtons"
+
+		var btn_hd = Button.new()
+		btn_hd.text = "HD (H)"
+		btn_hd.tooltip_text = "Alternar SSAO, SSIL, SDFGI e Fog"
+		btn_hd.pressed.connect(func(): toggle_hd_effects())
+		fx_btn_row.add_child(btn_hd)
+
+		var btn_pbr = Button.new()
+		btn_pbr.text = "PBR (T)"
+		btn_pbr.tooltip_text = "Alternar Terreno PBR vs Atlas Clássico"
+		btn_pbr.pressed.connect(func(): toggle_terrain_shader())
+		fx_btn_row.add_child(btn_pbr)
+
+		var btn_water = Button.new()
+		btn_water.text = "Oceano (O)"
+		btn_water.tooltip_text = "Alternar Oceano e Rios 3D"
+		btn_water.pressed.connect(func(): toggle_water())
+		fx_btn_row.add_child(btn_water)
+
+		var btn_grass = Button.new()
+		btn_grass.text = "Grama (G)"
+		btn_grass.tooltip_text = "Alternar Grama Procedural Dinâmica"
+		btn_grass.pressed.connect(func(): toggle_grass())
+		fx_btn_row.add_child(btn_grass)
+
+		vbox.add_child(fx_btn_row)
 
 	# Setup crosshair in the center of the screen
 	var hud = get_node_or_null("HUD")
@@ -110,16 +140,16 @@ func _process(_delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
-		if event.keycode == KEY_F8:
+		if event.keycode == KEY_H or event.keycode == KEY_F11:
 			toggle_hd_effects()
 			return
-		if event.keycode == KEY_F7:
+		if event.keycode == KEY_T:
 			toggle_terrain_shader()
 			return
-		if event.keycode == KEY_F9:
+		if event.keycode == KEY_O:
 			toggle_water()
 			return
-		if event.keycode == KEY_F10:
+		if event.keycode == KEY_G:
 			toggle_grass()
 			return
 		if maps_info.has(event.keycode):
@@ -142,10 +172,10 @@ func toggle_hd_effects() -> void:
 	var lbl: Label = get_node_or_null("HUD/Panel/VBox/FXStatus")
 	if lbl:
 		if _hd_fx_enabled:
-			lbl.text = "Graficos HD: SSAO, SSIL, SDFGI, Fog ATIVOS [F8: Desativar]"
+			lbl.text = "Graficos HD: SSAO, SSIL, SDFGI, Fog ATIVOS [H: Desativar]"
 			lbl.add_theme_color_override("font_color", Color(0.3, 1.0, 0.6, 1.0))
 		else:
-			lbl.text = "Graficos HD: DESATIVADOS (Modo Leve / 1997) [F8: Ativar]"
+			lbl.text = "Graficos HD: DESATIVADOS (Modo Leve / 1997) [H: Ativar]"
 			lbl.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4, 1.0))
 	print("[WorldExplorer] Graficos HD alternados: ", _hd_fx_enabled)
 

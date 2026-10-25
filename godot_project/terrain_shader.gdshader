@@ -180,101 +180,100 @@ void fragment() {
         ROUGHNESS = 0.15;
         SPECULAR = 0.5;
         METALLIC = 0.0;
-        return;
-    }
-
-    // 1. Calculate slope (0.0 = completely flat ground, 1.0 = completely vertical wall)
-    float slope = 1.0 - clamp(dot(v_normal, vec3(0.0, 1.0, 0.0)), 0.0, 1.0);
-
-    // 2. Base Biome Color & Material properties
-    vec3 base_col = grass_color;
-    float mat_roughness = base_roughness;
-    float mat_specular = base_specular;
-    float mat_ao = 1.0;
-
-    // Biome determination by TileID
-    if ((tid >= 268u && tid <= 285u) || (tid >= 400u && tid <= 403u)) {
-        // Snow
-        float n = fbm2d(v_world_pos.xz * 0.4);
-        base_col = mix(snow_color * 0.92, snow_color, n);
-        mat_roughness = 0.35;
-        mat_specular = 0.45;
-    } else if (tid >= 500u && tid <= 507u) {
-        // Lava
-        float pulse = sin(TIME * 2.5 + v_world_pos.x * 0.6 + v_world_pos.z * 0.6) * 0.5 + 0.5;
-        base_col = mix(lava_color, vec3(1.0, 0.75, 0.1), pulse * 0.6);
-        mat_roughness = 0.25;
-        mat_specular = 0.8;
-        EMISSION = base_col * (pulse * 1.2 + 0.3);
-    } else if ((tid >= 22u && tid <= 25u) || (tid >= 51u && tid <= 59u) || (tid >= 446u && tid <= 449u)) {
-        // Sand / Beach
-        float n = fbm2d(v_world_pos.xz * 0.6);
-        base_col = mix(sand_color * 0.93, sand_color * 1.07, n);
-        mat_roughness = 0.72;
-        mat_specular = 0.35;
-    } else if ((tid >= 113u && tid <= 120u) || (tid >= 228u && tid <= 235u) || (tid >= 368u && tid <= 375u)) {
-        // Dirt / Pathways
-        float n = fbm2d(v_world_pos.xz * 0.5);
-        base_col = mix(dirt_color * 0.88, dirt_color * 1.12, n);
-        mat_roughness = 0.86;
-        mat_specular = 0.18;
-    } else if ((tid >= 220u && tid <= 263u) || (tid >= 543u && tid <= 579u) || (tid >= 676u && tid <= 695u)) {
-        // Mountain rock
-        slope = max(slope, 0.55); // Force rock treatment on mountain tiles
     } else {
-        // Grass (Default Britannian soil with dry/lush organic patches)
-        float patch_noise = fbm2d(v_world_pos.xz * 0.2);
-        float micro_noise = fbm2d(v_world_pos.xz * 1.2);
-        base_col = mix(grass_color, grass_dry_color, patch_noise);
-        base_col = mix(base_col, base_col * 1.15, micro_noise * 0.5);
-        mat_roughness = 0.74;
-        mat_specular = 0.25;
+        // 1. Calculate slope (0.0 = completely flat ground, 1.0 = completely vertical wall)
+        float slope = 1.0 - clamp(dot(v_normal, vec3(0.0, 1.0, 0.0)), 0.0, 1.0);
+
+        // 2. Base Biome Color & Material properties
+        vec3 base_col = grass_color;
+        float mat_roughness = base_roughness;
+        float mat_specular = base_specular;
+        float mat_ao = 1.0;
+
+        // Biome determination by TileID
+        if ((tid >= 268u && tid <= 285u) || (tid >= 400u && tid <= 403u)) {
+            // Snow
+            float n = fbm2d(v_world_pos.xz * 0.4);
+            base_col = mix(snow_color * 0.92, snow_color, n);
+            mat_roughness = 0.35;
+            mat_specular = 0.45;
+        } else if (tid >= 500u && tid <= 507u) {
+            // Lava
+            float pulse = sin(TIME * 2.5 + v_world_pos.x * 0.6 + v_world_pos.z * 0.6) * 0.5 + 0.5;
+            base_col = mix(lava_color, vec3(1.0, 0.75, 0.1), pulse * 0.6);
+            mat_roughness = 0.25;
+            mat_specular = 0.8;
+            EMISSION = base_col * (pulse * 1.2 + 0.3);
+        } else if ((tid >= 22u && tid <= 25u) || (tid >= 51u && tid <= 59u) || (tid >= 446u && tid <= 449u)) {
+            // Sand / Beach
+            float n = fbm2d(v_world_pos.xz * 0.6);
+            base_col = mix(sand_color * 0.93, sand_color * 1.07, n);
+            mat_roughness = 0.72;
+            mat_specular = 0.35;
+        } else if ((tid >= 113u && tid <= 120u) || (tid >= 228u && tid <= 235u) || (tid >= 368u && tid <= 375u)) {
+            // Dirt / Pathways
+            float n = fbm2d(v_world_pos.xz * 0.5);
+            base_col = mix(dirt_color * 0.88, dirt_color * 1.12, n);
+            mat_roughness = 0.86;
+            mat_specular = 0.18;
+        } else if ((tid >= 220u && tid <= 263u) || (tid >= 543u && tid <= 579u) || (tid >= 676u && tid <= 695u)) {
+            // Mountain rock
+            slope = max(slope, 0.55); // Force rock treatment on mountain tiles
+        } else {
+            // Grass (Default Britannian soil with dry/lush organic patches)
+            float patch_noise = fbm2d(v_world_pos.xz * 0.2);
+            float micro_noise = fbm2d(v_world_pos.xz * 1.2);
+            base_col = mix(grass_color, grass_dry_color, patch_noise);
+            base_col = mix(base_col, base_col * 1.15, micro_noise * 0.5);
+            mat_roughness = 0.74;
+            mat_specular = 0.25;
+        }
+
+        // 3. Ground PBR Normal Mapping
+        vec3 ground_norm_local = calculate_ground_normal(v_world_pos.xz, normal_strength);
+        // Align ground normal to world coordinates
+        vec3 ground_norm_world = normalize(vec3(ground_norm_local.x, ground_norm_local.y * v_normal.y, ground_norm_local.z));
+
+        // 4. Triplanar Cliff Rock Mapping (for steep mountains & cliffs)
+        vec3 rock_col;
+        vec3 rock_norm;
+        float rock_rough;
+        get_triplanar_rock(v_world_pos, v_normal, rock_col, rock_norm, rock_rough);
+
+        // Smooth slope transition: Flat ground -> Steep rocky cliff
+        float cliff_factor = smoothstep(cliff_slope_start, cliff_slope_end, slope);
+        vec3 final_albedo = mix(base_col, rock_col, cliff_factor);
+        vec3 final_world_norm = normalize(mix(ground_norm_world, rock_norm, cliff_factor));
+        float final_roughness = mix(mat_roughness, rock_rough, cliff_factor);
+        float final_specular = mix(mat_specular, 0.32, cliff_factor);
+
+        // 5. Procedural Ambient Occlusion (Cavity darkening in soil & rock cracks)
+        float cavity = clamp(ground_height(v_world_pos.xz * 1.8), 0.0, 1.0);
+        mat_ao = mix(1.0 - ao_strength * 0.3, 1.0, cavity);
+        final_albedo *= mat_ao;
+
+        // Convert world normal to view space for Godot fragment pipeline
+        NORMAL = normalize((VIEW_MATRIX * vec4(final_world_norm, 0.0)).xyz);
+
+        // Debug overlays
+        if (show_wireframe_grid) {
+            vec2 grid = abs(fract(v_world_pos.xz - 0.5) - 0.5) / fwidth(v_world_pos.xz);
+            float line = min(grid.x, grid.y);
+            float c = 1.0 - min(line, 1.0);
+            final_albedo = mix(final_albedo, vec3(0.0), c * 0.5);
+        }
+
+        if (show_elevation_contours) {
+            float f = abs(fract(v_world_pos.y / contour_interval) - 0.5);
+            float df = fwidth(v_world_pos.y / contour_interval);
+            float contour = 1.0 - smoothstep(0.0, df * 1.5, f);
+            final_albedo = mix(final_albedo, vec3(1.0, 1.0, 1.0), contour * 0.4);
+        }
+
+        ALBEDO = final_albedo;
+        ROUGHNESS = final_roughness;
+        SPECULAR = final_specular;
+        METALLIC = 0.0;
+        AO = mat_ao;
     }
-
-    // 3. Ground PBR Normal Mapping
-    vec3 ground_norm_local = calculate_ground_normal(v_world_pos.xz, normal_strength);
-    // Align ground normal to world coordinates
-    vec3 ground_norm_world = normalize(vec3(ground_norm_local.x, ground_norm_local.y * v_normal.y, ground_norm_local.z));
-
-    // 4. Triplanar Cliff Rock Mapping (for steep mountains & cliffs)
-    vec3 rock_col;
-    vec3 rock_norm;
-    float rock_rough;
-    get_triplanar_rock(v_world_pos, v_normal, rock_col, rock_norm, rock_rough);
-
-    // Smooth slope transition: Flat ground -> Steep rocky cliff
-    float cliff_factor = smoothstep(cliff_slope_start, cliff_slope_end, slope);
-    vec3 final_albedo = mix(base_col, rock_col, cliff_factor);
-    vec3 final_world_norm = normalize(mix(ground_norm_world, rock_norm, cliff_factor));
-    float final_roughness = mix(mat_roughness, rock_rough, cliff_factor);
-    float final_specular = mix(mat_specular, 0.32, cliff_factor);
-
-    // 5. Procedural Ambient Occlusion (Cavity darkening in soil & rock cracks)
-    float cavity = clamp(ground_height(v_world_pos.xz * 1.8), 0.0, 1.0);
-    mat_ao = mix(1.0 - ao_strength * 0.3, 1.0, cavity);
-    final_albedo *= mat_ao;
-
-    // Convert world normal to view space for Godot fragment pipeline
-    NORMAL = normalize((VIEW_MATRIX * vec4(final_world_norm, 0.0)).xyz);
-
-    // Debug overlays
-    if (show_wireframe_grid) {
-        vec2 grid = abs(fract(v_world_pos.xz - 0.5) - 0.5) / fwidth(v_world_pos.xz);
-        float line = min(grid.x, grid.y);
-        float c = 1.0 - min(line, 1.0);
-        final_albedo = mix(final_albedo, vec3(0.0), c * 0.5);
-    }
-
-    if (show_elevation_contours) {
-        float f = abs(fract(v_world_pos.y / contour_interval) - 0.5);
-        float df = fwidth(v_world_pos.y / contour_interval);
-        float contour = 1.0 - smoothstep(0.0, df * 1.5, f);
-        final_albedo = mix(final_albedo, vec3(1.0, 1.0, 1.0), contour * 0.4);
-    }
-
-    ALBEDO = final_albedo;
-    ROUGHNESS = final_roughness;
-    SPECULAR = final_specular;
-    METALLIC = 0.0;
-    AO = mat_ao;
 }
