@@ -172,8 +172,11 @@ func _update_raycast_inspection() -> void:
 	var ray_end = cam_pos + forward * 350.0
 
 	var query = PhysicsRayQueryParameters3D.create(cam_pos, ray_end)
-	query.collide_with_areas = true
+	query.collide_with_areas = false
 	query.collide_with_bodies = true
+	query.collision_mask = 1
+	if first_person_player:
+		query.exclude = [first_person_player.get_rid()]
 	var res = space_state.intersect_ray(query)
 
 	if not res:

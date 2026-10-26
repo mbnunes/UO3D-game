@@ -19,10 +19,14 @@ var _pitch: float = 0.0
 var is_active: bool = false
 
 func _ready() -> void:
+	motion_mode = MOTION_MODE_GROUNDED
+	up_direction = Vector3.UP
 	floor_constant_speed = true
-	floor_snap_length = 0.35
-	floor_max_angle = deg_to_rad(48.0)
+	floor_snap_length = 0.25
+	floor_max_angle = deg_to_rad(50.0)
 	floor_stop_on_slope = true
+	floor_block_on_wall = false
+	wall_min_slide_angle = 0.0
 	set_active(false)
 
 func set_active(active: bool) -> void:
@@ -67,12 +71,12 @@ func _physics_process(delta: float) -> void:
 	if not is_active:
 		return
 
-	# 1. Apply gravity
+	# 1. Apply gravity / floor adherence
+	# Keeping a slight downward velocity when grounded keeps floor snap engaged across trimesh seams
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 	else:
-		if velocity.y < 0:
-			velocity.y = 0.0
+		velocity.y = -1.0
 
 	# 2. Handle Jump with Space
 	if Input.is_key_pressed(KEY_SPACE) and is_on_floor():

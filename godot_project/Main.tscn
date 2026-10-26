@@ -15,8 +15,8 @@ subdivide_width = 150
 subdivide_depth = 150
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
-radius = 0.35
-height = 1.75
+radius = 0.3
+height = 1.6
 
 [node name="Main" type="Node3D" node_paths=PackedStringArray("player_camera", "terrain_loader", "first_person_player")]
 script = ExtResource("1_explorer")
@@ -53,18 +53,16 @@ move_speed = 60.0
 [node name="FirstPersonPlayer" type="CharacterBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1440, 35, 1690)
 collision_layer = 2
-collision_mask = 1
 script = ExtResource("7_player")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="FirstPersonPlayer"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.88, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
 shape = SubResource("CapsuleShape3D_player")
 
 [node name="Head" type="Node3D" parent="FirstPersonPlayer"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.65, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, 0)
 
 [node name="Camera3D" type="Camera3D" parent="FirstPersonPlayer/Head"]
-fov = 75.0
 
 [node name="GrassManager" type="Node3D" parent="." node_paths=PackedStringArray("target_camera")]
 script = ExtResource("6_grass")
