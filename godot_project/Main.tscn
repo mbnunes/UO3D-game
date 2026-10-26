@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://cub5u2w5bw8qa"]
+[gd_scene load_steps=10 format=3 uid="uid://cub5u2w5bw8qa"]
 
 [ext_resource type="Script" path="res://WorldExplorer.gd" id="1_explorer"]
 [ext_resource type="Script" path="res://TerrainLoader.gd" id="2_terrain"]
@@ -6,6 +6,7 @@
 [ext_resource type="Environment" uid="uid://cv8e3loo660u7" path="res://britannia_environment.tres" id="4_env"]
 [ext_resource type="Material" path="res://water_material.tres" id="5_water_mat"]
 [ext_resource type="Script" path="res://GrassManager.gd" id="6_grass"]
+[ext_resource type="Script" path="res://FirstPersonPlayer.gd" id="7_player"]
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_water"]
 material = ExtResource("5_water_mat")
@@ -13,10 +14,15 @@ size = Vector2(1000, 1000)
 subdivide_width = 150
 subdivide_depth = 150
 
-[node name="Main" type="Node3D" node_paths=PackedStringArray("player_camera", "terrain_loader")]
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_player"]
+radius = 0.35
+height = 1.75
+
+[node name="Main" type="Node3D" node_paths=PackedStringArray("player_camera", "terrain_loader", "first_person_player")]
 script = ExtResource("1_explorer")
 player_camera = NodePath("FreeLookCamera")
 terrain_loader = NodePath("TerrainLoader")
+first_person_player = NodePath("FirstPersonPlayer")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = ExtResource("4_env")
@@ -43,6 +49,22 @@ directional_shadow_max_distance = 450.0
 transform = Transform3D(1, 0, 0, 0, 0.906308, 0.422618, 0, -0.422618, 0.906308, 1440, 35, 1690)
 script = ExtResource("3_camera")
 move_speed = 60.0
+
+[node name="FirstPersonPlayer" type="CharacterBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1440, 35, 1690)
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("7_player")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FirstPersonPlayer"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.88, 0)
+shape = SubResource("CapsuleShape3D_player")
+
+[node name="Head" type="Node3D" parent="FirstPersonPlayer"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.65, 0)
+
+[node name="Camera3D" type="Camera3D" parent="FirstPersonPlayer/Head"]
+fov = 75.0
 
 [node name="GrassManager" type="Node3D" parent="." node_paths=PackedStringArray("target_camera")]
 script = ExtResource("6_grass")
@@ -98,15 +120,15 @@ layout_mode = 2
 
 [node name="Title" type="Label" parent="HUD/PanelInspector/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.2, 0.9, 1.0, 1)
+theme_override_colors/font_color = Color(0.2, 0.9, 1, 1)
 theme_override_font_sizes/font_size = 16
 text = "🎯 Inspetor de Alvo (Mira Central)"
 
 [node name="TargetDetails" type="RichTextLabel" parent="HUD/PanelInspector/VBox"]
 layout_mode = 2
-fit_content = true
 bbcode_enabled = true
 text = "Mirando: [Aponte a mira para um tile ou construção]"
+fit_content = true
 
 [node name="BtnCopy" type="Button" parent="HUD/PanelInspector/VBox"]
 layout_mode = 2
@@ -114,6 +136,5 @@ text = "📋 Copiar Dados do Alvo (Tecla K)"
 
 [node name="CopyFeedback" type="Label" parent="HUD/PanelInspector/VBox"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.3, 1.0, 0.5, 1)
+theme_override_colors/font_color = Color(0.3, 1, 0.5, 1)
 theme_override_font_sizes/font_size = 11
-text = ""

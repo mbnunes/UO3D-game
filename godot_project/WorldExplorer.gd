@@ -8,6 +8,7 @@ extends Node3D
 
 @export var player_camera: Camera3D
 @export var terrain_loader: TerrainLoader
+@export var first_person_player: CharacterBody3D
 
 var maps_info = {
 	KEY_F1: {"id": 0, "name": "Felucca (Map 0)",  "pos": Vector3(1440, 35, 1690), "loc": "Britain (West Bank)", "has_ocean": true,  "water_y": -0.55},
@@ -41,11 +42,17 @@ func _ready() -> void:
 		player_camera = get_node_or_null("FreeLookCamera")
 	if not terrain_loader:
 		terrain_loader = get_node_or_null("TerrainLoader")
+	if not first_person_player:
+		first_person_player = get_node_or_null("FirstPersonPlayer")
 
 	_load_buildings_spatial_index()
 
 	var vbox = get_node_or_null("HUD/Panel/VBox")
 	if vbox:
+		var help_lbl = vbox.get_node_or_null("Help")
+		if help_lbl:
+			help_lbl.text = "V: Alternar 1ª Pessoa / Voo Livre | Espaço: Pular | Shift: Correr\nWASD + Botão Dir.: Mover | 1..9: Teleporte | K: Copiar Alvo"
+
 		# Map Selector Status Label
 		var map_lbl = Label.new()
 		map_lbl.name = "CurrentMap"
@@ -103,6 +110,13 @@ func _ready() -> void:
 		btn_grass.tooltip_text = "Alternar Grama Procedural Dinâmica"
 		btn_grass.pressed.connect(func(): toggle_grass())
 		fx_btn_row.add_child(btn_grass)
+
+		var btn_cam = Button.new()
+		btn_cam.name = "BtnCameraMode"
+		btn_cam.text = "1ª Pessoa (V)"
+		btn_cam.tooltip_text = "Alternar entre Câmera Livre (Voo) e 1ª Pessoa com Física e Pulo (V)"
+		btn_cam.pressed.connect(func(): toggle_camera_mode())
+		fx_btn_row.add_child(btn_cam)
 
 		vbox.add_child(fx_btn_row)
 
@@ -260,6 +274,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.keycode == KEY_K:
 			copy_inspect_details()
 			return
+		if event.keycode == KEY_V:
+			toggle_camera_mode()
+			return
 		if maps_info.has(event.keycode):
 			var m = maps_info[event.keycode]
 			change_map(m["id"], m["name"], m["pos"], m["loc"])
@@ -320,6 +337,77 @@ func toggle_grass() -> void:
 		gm.enabled = gm.visible
 	print("[WorldExplorer] Grama procedural alternada: ", gm.visible)
 
+var _is_first_person: bool = false
+
+func toggle_camera_mode() -> void:
+	_is_first_person = not _is_first_person
+	var free_cam: FreeLookCamera = get_node_or_null("FreeLookCamera")
+	if not free_cam or not first_person_player:
+		return
+
+	var btn_cam: Button = get_node_or_null("HUD/Panel/VBox/FXButtons/BtnCameraMode")
+
+	if _is_first_person:
+		# Switch from FreeLook to First-Person
+		var cam_pos = free_cam.global_position
+		var cam_yaw = free_cam.rotation.y
+		var cam_pitch = free_cam.rotation.x
+
+		# Raycast down to find ground level under camera
+		var space_state = get_world_3d().direct_space_state
+		var query = PhysicsRayQueryParameters3D.create(cam_pos + Vector3.UP * 1.0, cam_pos + Vector3.DOWN * 200.0)
+		query.collision_mask = 1
+		var hit = space_state.intersect_ray(query)
+		if hit:
+			first_person_player.global_position = hit["position"] + Vector3.UP * 0.05
+		else:
+			first_person_player.global_position = cam_pos
+
+		first_person_player.velocity = Vector3.ZERO
+		first_person_player.rotation.y = cam_yaw
+		if first_person_player.has_method("set_pitch"):
+			first_person_player.set_pitch(cam_pitch)
+
+		free_cam.set_active(false)
+		free_cam.current = false
+
+		if first_person_player.has_method("set_active"):
+			first_person_player.set_active(true)
+		var fp_cam: Camera3D = first_person_player.get_node_or_null("Head/Camera3D")
+		if fp_cam:
+			player_camera = fp_cam
+
+		if btn_cam:
+			btn_cam.text = "Voo Livre (V)"
+			btn_cam.tooltip_text = "Alternar de volta para Câmera Livre de Voo (V)"
+		print("[WorldExplorer] Modo Primeira Pessoa ATIVO (WASD move, Espaço pula, Shift corre, V volta).")
+	else:
+		# Switch from First-Person to FreeLook
+		var fp_cam: Camera3D = first_person_player.get_node_or_null("Head/Camera3D")
+		var head_pos: Vector3 = fp_cam.global_position if fp_cam else first_person_player.global_position + Vector3.UP * 1.65
+		var head_rot: Vector3 = fp_cam.global_rotation if fp_cam else first_person_player.global_rotation
+
+		if first_person_player.has_method("set_active"):
+			first_person_player.set_active(false)
+
+		free_cam.global_position = head_pos
+		free_cam.set_rotation_ypr(head_rot.y, head_rot.x)
+		free_cam.set_active(true)
+		free_cam.current = true
+		player_camera = free_cam
+
+		if btn_cam:
+			btn_cam.text = "1ª Pessoa (V)"
+			btn_cam.tooltip_text = "Alternar para Modo Primeira Pessoa com Física e Pulo (V)"
+		print("[WorldExplorer] Modo Câmera Livre ATIVO.")
+
+	# Update target camera references for streaming and procedural grass
+	if terrain_loader:
+		terrain_loader.target_camera = player_camera
+	var gm: Node3D = get_node_or_null("GrassManager")
+	if gm and "target_camera" in gm:
+		gm.target_camera = player_camera
+
 func change_map(map_id: int, map_name: String, spawn_pos: Vector3, spawn_name: String) -> void:
 	current_map_id = map_id
 	if terrain_loader:
@@ -346,9 +434,20 @@ func change_map(map_id: int, map_name: String, spawn_pos: Vector3, spawn_name: S
 	print("[WorldExplorer] Alternado para o mapa: ", map_name)
 
 func teleport_to(target_pos: Vector3, location_name: String) -> void:
-	if player_camera:
+	if _is_first_person and first_person_player:
+		var space_state = get_world_3d().direct_space_state
+		var query = PhysicsRayQueryParameters3D.create(target_pos + Vector3.UP * 5.0, target_pos + Vector3.DOWN * 200.0)
+		query.collision_mask = 1
+		var hit = space_state.intersect_ray(query)
+		if hit:
+			first_person_player.global_position = hit["position"] + Vector3.UP * 0.1
+		else:
+			first_person_player.global_position = target_pos
+		first_person_player.velocity = Vector3.ZERO
+	elif player_camera:
 		player_camera.global_position = target_pos
-		var lbl: Label = get_node_or_null("HUD/Panel/VBox/Location")
-		if lbl:
-			lbl.text = "Localização: " + location_name + " " + str(target_pos)
-		print("[WorldExplorer] Teleportado para: ", location_name, " em ", target_pos)
+
+	var lbl: Label = get_node_or_null("HUD/Panel/VBox/Location")
+	if lbl:
+		lbl.text = "Localização: " + location_name + " " + str(target_pos)
+	print("[WorldExplorer] Teleportado para: ", location_name, " em ", target_pos)
