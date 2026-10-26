@@ -105,18 +105,25 @@ void fragment() {
     float water_depth = -VERTEX.z;
     float depth_diff = clamp(scene_depth - water_depth, 0.0, 100.0);
 
+    // Dynamic wave lapping & shoreline curve perturbation (eliminates straight 90-degree tile edges)
+    float shore_wave = sin(v_world_pos.x * 1.6 + v_world_pos.z * 1.3 + t * 1.8) * 0.06
+                     + cos(v_world_pos.x * 2.8 - v_world_pos.z * 2.2 - t * 1.4) * 0.04;
+    float shore_micro = (noise(v_world_pos.xz * 2.5 + vec2(t * 0.15, t * 0.12)) - 0.5) * 0.10;
+    float effective_depth = max(0.0, depth_diff + (shore_wave + shore_micro) * smoothstep(1.5, 0.0, depth_diff));
+
     // 3. Screen-Space Refraction
     vec2 refract_offset = normal_tangent.xz * refraction_strength * clamp(depth_diff * 0.5, 0.0, 1.0);
     vec3 screen_col = textureLod(screen_texture, SCREEN_UV + refract_offset, 0.0).rgb;
 
     // 4. Water Color & Depth Absorption (Beer-Lambert absorption)
-    float depth_factor = clamp(depth_diff / depth_distance, 0.0, 1.0);
+    float depth_factor = clamp(effective_depth / depth_distance, 0.0, 1.0);
     vec3 water_col = mix(shallow_color.rgb, deep_color.rgb, depth_factor);
     vec3 final_color = mix(screen_col, water_col, mix(shallow_color.a, deep_color.a, depth_factor));
 
-    // 5. Shoreline & Object Contact Foam
-    float foam_noise = noise(v_world_pos.xz * 3.0 + vec2(t * 0.2, t * 0.15));
-    float foam_line = 1.0 - smoothstep(0.0, foam_depth + foam_noise * 0.15, depth_diff);
+    // 5. Shoreline & Object Contact Foam (Organic undulating wave wash)
+    float foam_noise = noise(v_world_pos.xz * 3.5 + vec2(t * 0.3, t * 0.2)) * 0.6
+                     + noise(v_world_pos.xz * 7.0 - vec2(t * 0.2, t * 0.25)) * 0.4;
+    float foam_line = 1.0 - smoothstep(0.0, foam_depth * (0.85 + foam_noise * 0.5), effective_depth);
     final_color = mix(final_color, foam_color.rgb, foam_line * 0.85);
 
     // 6. Fresnel Effect for reflections
