@@ -107,6 +107,8 @@ def process_chunk(args):
                 dx = -(1 if tl_l or bl_l else -1) * BEVEL_AMOUNT
                 dz = -(1 if tl_l or tr_l else -1) * BEVEL_AMOUNT
 
+            target_x = float(gx) + dx
+            target_z = float(gz) + dz
             if dx != 0.0 or dz != 0.0:
                 corners_smoothed += 1
                 v_indices = [
@@ -116,8 +118,8 @@ def process_chunk(args):
                     (gz * 64 + gx) * 4 + 0,
                 ]
                 for vi in v_indices:
-                    x, y, z = struct.unpack_from("<3f", bin_bytes, pos_offset + vi * 12)
-                    struct.pack_into("<3f", bin_bytes, pos_offset + vi * 12, x + dx, y, z + dz)
+                    _, y, _ = struct.unpack_from("<3f", bin_bytes, pos_offset + vi * 12)
+                    struct.pack_into("<3f", bin_bytes, pos_offset + vi * 12, target_x, y, target_z)
 
     # 3. Compute continuous smooth normals across all shoreline quads
     face_normals = [[(0.0, 1.0, 0.0)]*64 for _ in range(64)]
@@ -127,14 +129,33 @@ def process_chunk(args):
             p0 = struct.unpack_from("<3f", bin_bytes, pos_offset + (base + 0) * 12)
             p1 = struct.unpack_from("<3f", bin_bytes, pos_offset + (base + 1) * 12)
             p2 = struct.unpack_from("<3f", bin_bytes, pos_offset + (base + 2) * 12)
-            e1 = (p1[0]-p0[0], p1[1]-p0[1], p1[2]-p0[2])
-            e2 = (p2[0]-p0[0], p2[1]-p0[1], p2[2]-p0[2])
-            nx = e1[1]*e2[2] - e1[2]*e2[1]
-            ny = e1[2]*e2[0] - e1[0]*e2[2]
-            nz = e1[0]*e2[1] - e1[1]*e2[0]
+            p3 = struct.unpack_from("<3f", bin_bytes, pos_offset + (base + 3) * 12)
+
+            # Tri A: (p0, p2, p1) => (p2 - p0) x (p1 - p0)
+            eA1 = (p2[0]-p0[0], p2[1]-p0[1], p2[2]-p0[2])
+            eA2 = (p1[0]-p0[0], p1[1]-p0[1], p1[2]-p0[2])
+            nA = (
+                eA1[1]*eA2[2] - eA1[2]*eA2[1],
+                eA1[2]*eA2[0] - eA1[0]*eA2[2],
+                eA1[0]*eA2[1] - eA1[1]*eA2[0]
+            )
+            # Tri B: (p1, p2, p3) => (p3 - p2) x (p1 - p2)
+            eB1 = (p3[0]-p2[0], p3[1]-p2[1], p3[2]-p2[2])
+            eB2 = (p1[0]-p2[0], p1[1]-p2[1], p1[2]-p2[2])
+            nB = (
+                eB1[1]*eB2[2] - eB1[2]*eB2[1],
+                eB1[2]*eB2[0] - eB1[0]*eB2[2],
+                eB1[0]*eB2[1] - eB1[1]*eB2[0]
+            )
+            nx = nA[0] + nB[0]
+            ny = nA[1] + nB[1]
+            nz = nA[2] + nB[2]
             l = math.sqrt(nx*nx + ny*ny + nz*nz)
             if l > 1e-6:
-                face_normals[cy][cx] = (nx/l, ny/l, nz/l)
+                fn = (nx/l, ny/l, nz/l)
+                if fn[1] < 0:
+                    fn = (-fn[0], -fn[1], -fn[2])
+                face_normals[cy][cx] = fn
 
     for gz in range(65):
         for gx in range(65):
@@ -149,6 +170,8 @@ def process_chunk(args):
             if cnt > 0:
                 l = math.sqrt(acc_nx*acc_nx + acc_ny*acc_ny + acc_nz*acc_nz)
                 avg_n = (acc_nx/l, acc_ny/l, acc_nz/l) if l > 1e-6 else (0.0, 1.0, 0.0)
+                if avg_n[1] < 0:
+                    avg_n = (-avg_n[0], -avg_n[1], -avg_n[2])
 
                 if gx > 0 and gz > 0:
                     struct.pack_into("<3f", bin_bytes, norm_offset + (((gz-1)*64 + (gx-1))*4 + 3)*12, *avg_n)
